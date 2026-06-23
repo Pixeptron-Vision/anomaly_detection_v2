@@ -1,0 +1,13 @@
+.git/
+.github/
+data/
+docs/
+tests/
+logs/
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+*.md
+mkdocs.yml
+.gitignore
