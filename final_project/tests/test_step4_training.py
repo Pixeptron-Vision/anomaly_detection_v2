@@ -6,6 +6,11 @@ Run with:
 
 Prerequisites: None (uses a tiny inline model, does not depend on Step 3).
 
+These tests verify the *contract* of your training functions without
+enforcing specific loss functions or optimizers. The hints guide you
+toward CrossEntropyLoss + Adam, but you may explore alternatives
+(e.g., focal loss, AdamW, SGD) as long as the contract holds.
+
 Note: TRAIN-4 (checkpoint saving) is inline code inside train() and cannot
 be unit-tested directly. Verify it by running:
     python -m steel_defect.train --epochs 2
@@ -69,16 +74,29 @@ class TestTrain1Setup:
         assert isinstance(result, tuple), "Should return a tuple"
         assert len(result) == 2, "Should return (criterion, optimizer)"
 
-    def test_criterion_is_cross_entropy(self, tiny_model):
+    def test_criterion_is_callable(self, tiny_model):
+        """Loss function must be callable (nn.Module or function)."""
         criterion, _ = setup_training(tiny_model)
-        assert isinstance(criterion, nn.CrossEntropyLoss), (
-            f"Expected CrossEntropyLoss, got {type(criterion).__name__}"
+        assert callable(criterion), (
+            f"Criterion should be callable, got {type(criterion).__name__}"
         )
 
-    def test_optimizer_is_adam(self, tiny_model):
+    def test_criterion_produces_scalar_loss(self, tiny_model):
+        """Loss function must accept (logits, labels) and return a scalar."""
+        criterion, _ = setup_training(tiny_model)
+        logits = torch.randn(4, NUM_CLASSES)
+        labels = torch.randint(0, NUM_CLASSES, (4,))
+        loss = criterion(logits, labels)
+        assert loss.dim() == 0, (
+            f"Loss should be a scalar (0-dim tensor), got shape {tuple(loss.shape)}"
+        )
+        assert loss.item() > 0, "Loss should be positive for random predictions"
+
+    def test_optimizer_is_optimizer(self, tiny_model):
+        """Must return a torch.optim.Optimizer subclass."""
         _, optimizer = setup_training(tiny_model)
-        assert isinstance(optimizer, optim.Adam), (
-            f"Expected Adam optimizer, got {type(optimizer).__name__}"
+        assert isinstance(optimizer, optim.Optimizer), (
+            f"Expected an optim.Optimizer subclass, got {type(optimizer).__name__}"
         )
 
     def test_optimizer_has_model_params(self, tiny_model):

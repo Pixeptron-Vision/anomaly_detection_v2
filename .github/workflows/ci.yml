@@ -66,6 +66,10 @@ jobs:
           pip install -r requirements.txt
       - name: Run Step 3 tests
         run: pytest tests/test_step3_model.py -v --tb=short
+      - name: "Style hints (advisory — won't affect your grade)"
+        if: always()
+        continue-on-error: true
+        run: pytest tests/test_step3_style.py -v --tb=short
 
   step4-training:
     name: "Step 4: Training"
@@ -86,6 +90,10 @@ jobs:
           pip install -r requirements.txt
       - name: Run Step 4 tests
         run: pytest tests/test_step4_training.py -v --tb=short
+      - name: "Style hints (advisory — won't affect your grade)"
+        if: always()
+        continue-on-error: true
+        run: pytest tests/test_step4_style.py -v --tb=short
 
   step5-inference:
     name: "Step 5: Inference"

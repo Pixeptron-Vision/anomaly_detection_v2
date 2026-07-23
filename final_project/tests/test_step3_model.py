@@ -5,6 +5,11 @@ Run with:
     pytest tests/test_step3_model.py -v
 
 Prerequisites: None.
+
+These tests verify the *contract* of your model (correct input/output shapes,
+trainable parameters, raw logits) without enforcing a specific architecture.
+The hints in model.py guide you toward a 3-block CNN, but you are free to
+explore deeper or more complex designs as long as the contract holds.
 """
 import pytest
 import torch
@@ -31,48 +36,36 @@ class TestModel1Init:
     def test_is_nn_module(self, model):
         assert isinstance(model, torch.nn.Module)
 
-    def test_has_features(self, model):
-        assert hasattr(model, "features"), "Model must have a 'features' attribute"
-
-    def test_has_pool(self, model):
-        assert hasattr(model, "pool"), "Model must have a 'pool' attribute"
-
-    def test_has_classifier(self, model):
-        assert hasattr(model, "classifier"), "Model must have a 'classifier' attribute"
-
-    def test_features_is_sequential(self, model):
-        assert isinstance(model.features, torch.nn.Sequential), (
-            "self.features should be nn.Sequential"
-        )
-
-    def test_pool_is_adaptive(self, model):
-        assert isinstance(model.pool, torch.nn.AdaptiveAvgPool2d), (
-            "self.pool should be nn.AdaptiveAvgPool2d"
-        )
-
-    def test_classifier_is_sequential(self, model):
-        assert isinstance(model.classifier, torch.nn.Sequential), (
-            "self.classifier should be nn.Sequential"
-        )
-
     def test_has_trainable_parameters(self, model):
         assert model.num_parameters > 0, "Model should have trainable parameters"
 
-    def test_features_has_conv_layers(self, model):
-        """Features should contain Conv2d layers."""
-        conv_layers = [m for m in model.features.modules()
-                       if isinstance(m, torch.nn.Conv2d)]
-        assert len(conv_layers) >= 3, (
-            f"Expected at least 3 Conv2d layers in features, found {len(conv_layers)}"
+    def test_reasonable_parameter_count(self, model):
+        """Guard against degenerate models (too tiny or too huge)."""
+        assert model.num_parameters > 100, (
+            f"Model has only {model.num_parameters} parameters — "
+            "too few for a useful image classifier"
+        )
+        assert model.num_parameters < 50_000_000, (
+            f"Model has {model.num_parameters:,} parameters — "
+            "over 50M is excessive for this task"
         )
 
-    def test_features_has_batchnorm(self, model):
-        """Features should contain BatchNorm2d layers."""
-        bn_layers = [m for m in model.features.modules()
-                     if isinstance(m, torch.nn.BatchNorm2d)]
-        assert len(bn_layers) >= 3, (
-            f"Expected at least 3 BatchNorm2d layers, found {len(bn_layers)}"
+    def test_has_conv_layers(self, model):
+        """Model should contain at least one Conv2d layer."""
+        conv_layers = [m for m in model.modules()
+                       if isinstance(m, torch.nn.Conv2d)]
+        assert len(conv_layers) >= 1, (
+            "A CNN should contain at least one Conv2d layer"
         )
+
+    def test_accepts_expected_input(self, model, dummy_batch):
+        """Model must accept (batch, 3, 256, 256) input without error."""
+        try:
+            model(dummy_batch)
+        except Exception as e:
+            pytest.fail(
+                f"Model failed on input shape {tuple(dummy_batch.shape)}: {e}"
+            )
 
 
 class TestModel2Forward:
@@ -112,3 +105,17 @@ class TestModel2Forward:
         x = torch.randn(1, 3, IMAGE_SIZE[0], IMAGE_SIZE[1])
         output = custom_model(x)
         assert output.shape == (1, 3)
+
+    def test_gradients_flow(self, model, dummy_batch):
+        """Gradients should flow from output back to input layers."""
+        output = model(dummy_batch)
+        loss = output.sum()
+        loss.backward()
+        has_grad = any(
+            p.grad is not None and p.grad.abs().sum() > 0
+            for p in model.parameters()
+        )
+        assert has_grad, (
+            "No gradients reached model parameters — check that all layers "
+            "are connected in the forward pass"
+        )
