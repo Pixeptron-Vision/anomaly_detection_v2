@@ -1,0 +1,108 @@
+name: Homework CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  step1-preprocessing:
+    name: "Step 1: Preprocessing"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: final_project
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt
+      - name: Run Step 1 tests
+        run: pytest tests/test_step1_preprocessing.py -v --tb=short
+
+  step2-dataset:
+    name: "Step 2: Dataset"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: final_project
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt
+      - name: Run Step 2 tests
+        run: pytest tests/test_step2_dataset.py -v --tb=short
+
+  step3-model:
+    name: "Step 3: Model"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: final_project
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt
+      - name: Run Step 3 tests
+        run: pytest tests/test_step3_model.py -v --tb=short
+
+  step4-training:
+    name: "Step 4: Training"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: final_project
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt
+      - name: Run Step 4 tests
+        run: pytest tests/test_step4_training.py -v --tb=short
+
+  step5-inference:
+    name: "Step 5: Inference"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: final_project
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt
+      - name: Run Step 5 tests
+        run: pytest tests/test_step5_inference.py -v --tb=short
